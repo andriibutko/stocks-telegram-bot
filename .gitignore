@@ -16,3 +16,6 @@
 
 #GoLand files
 *.idea
+
+#Config files
+config.json
