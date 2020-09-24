@@ -1,15 +1,16 @@
-﻿package main
+package main
 
 import (
+	"context"
+	"fmt"
+	finhub "github.com/Finnhub-Stock-API/finnhub-go"
+	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"strconv"
 )
 
 func main() {
-	println("Ciao!")
-
-	bot, err := tgbotapi.NewBotAPI("")
+	bot, err := tgbotapi.NewBotAPI("telegram-bot-api")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -28,12 +29,26 @@ func main() {
 			continue
 		}
 
+		finhubClient := finhub.NewAPIClient(finhub.NewConfiguration()).DefaultApi
+		auth := context.WithValue(context.Background(), finhub.ContextAPIKey, finhub.APIKey{
+			Key: "API-KEY",
+		})
+
+		quote, _, err := finhubClient.Quote(auth, "WIX")
+
+		if err == nil {
+			fmt.Print("Finhub Client uncreated.")
+		}
+
+		fmt.Printf("%+v\n", quote)
+
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+		var price = strconv.FormatFloat(float64(quote.Pc), 'f', 4, 64)
+
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, price)
 		msg.ReplyToMessageID = update.Message.MessageID
 
 		bot.Send(msg)
 	}
-
 }
