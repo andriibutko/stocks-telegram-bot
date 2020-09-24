@@ -10,7 +10,9 @@ import (
 )
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI("telegram-bot-api")
+	config := GetConfig()
+
+	bot, err := tgbotapi.NewBotAPI(config.TelegramBotKey)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -31,24 +33,24 @@ func main() {
 
 		finhubClient := finhub.NewAPIClient(finhub.NewConfiguration()).DefaultApi
 		auth := context.WithValue(context.Background(), finhub.ContextAPIKey, finhub.APIKey{
-			Key: "API-KEY",
+			Key: config.FinhubApiKey,
 		})
 
 		quote, _, err := finhubClient.Quote(auth, "WIX")
 
-		if err == nil {
-			fmt.Print("Finhub Client uncreated.")
+		if err != nil{
+			fmt.Printf("Oi yooo.")
 		}
 
 		fmt.Printf("%+v\n", quote)
 
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-		var price = strconv.FormatFloat(float64(quote.Pc), 'f', 4, 64)
+		price := strconv.FormatFloat(float64(quote.Pc), 'f', 4, 64)
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, price)
 		msg.ReplyToMessageID = update.Message.MessageID
 
-		bot.Send(msg)
+		_, _ = bot.Send(msg)
 	}
 }
