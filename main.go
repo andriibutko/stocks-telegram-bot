@@ -3,11 +3,25 @@ package main
 import (
 	"context"
 	"fmt"
-	finhub "github.com/Finnhub-Stock-API/finnhub-go"
-	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"strconv"
+
+	finhub "github.com/Finnhub-Stock-API/finnhub-go"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
+
+const welcomeMessage = `Hi, I can tell you how much money you got from WIX stocks.
+Use command /price to get current Stock price.`
+
+const stubCommand =
+`This feature under development.
+You can try to donate money to speed up this process.`
+
+const defaultResponse =
+`Try to use commands, I don't speak human language.`
+
+const rejectResponse =
+`You are not from WIX, GFY.`
 
 func main() {
 	config := GetConfig()
@@ -31,26 +45,63 @@ func main() {
 			continue
 		}
 
-		finhubClient := finhub.NewAPIClient(finhub.NewConfiguration()).DefaultApi
-		auth := context.WithValue(context.Background(), finhub.ContextAPIKey, finhub.APIKey{
-			Key: config.FinhubApiKey,
-		})
-
-		quote, _, err := finhubClient.Quote(auth, "WIX")
-
-		if err != nil{
+		if err != nil {
 			fmt.Printf("Oi yooo.")
 		}
-
-		fmt.Printf("%+v\n", quote)
-
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-		price := strconv.FormatFloat(float64(quote.Pc), 'f', 4, 64)
-
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, price)
-		msg.ReplyToMessageID = update.Message.MessageID
+		authorized := getAuthStatus(update.Message)
+		stockPrice := getStockPrice("WIX")
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID,
+			getCommandResponse(update.Message.Text, stockPrice, authorized))
 
 		_, _ = bot.Send(msg)
 	}
+}
+
+func getCommandResponse(input string, price float32, authorized bool) string {
+	var text string
+
+	if !authorized {
+		return rejectResponse
+	}
+
+	switch input {
+	case "/start":
+		text = welcomeMessage
+		break
+	case "/price":
+		text = strconv.FormatFloat(float64(price), 'f', 4, 64)
+		break
+	case "/subscribe":
+		text = stubCommand
+	default:
+		text = defaultResponse
+	}
+
+	return text
+}
+
+func getStockPrice(stock string) float32 {
+	config := GetConfig()
+
+	finhubClient := finhub.NewAPIClient(finhub.NewConfiguration()).DefaultApi
+	auth := context.WithValue(context.Background(), finhub.ContextAPIKey, finhub.APIKey{
+		Key: config.FinhubAPIKey,
+	})
+
+	quote, _, err := finhubClient.Quote(auth, stock)
+	if err != nil {
+		log.Printf("%+v\n", quote)
+	}
+
+	return quote.Pc
+}
+
+func getAuthStatus(msg *tgbotapi.Message) bool {
+	if msg.Chat.UserName == "kiriltaran" {
+		return true
+	}
+	
+	return false
 }
