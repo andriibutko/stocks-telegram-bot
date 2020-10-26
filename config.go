@@ -5,11 +5,13 @@ import (
 	"github.com/tkanos/gonfig"
 )
 
+// Config contains config props.
 type Config struct {
 	TelegramBotKey string
-	FinhubApiKey   string
+	FinhubAPIKey   string
 }
 
+// GetConfig Gets config.
 func GetConfig() Config {
 	configuration := Config{}
 
