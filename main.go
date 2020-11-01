@@ -49,16 +49,22 @@ func main() {
 			fmt.Printf("Oi yooo.")
 		}
 		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+
+		authorized := getAuthStatus(update.Message)
 		stockPrice := getStockPrice("WIX")
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID,
-			getCommandResponse(update.Message.Text, stockPrice))
+			getCommandResponse(update.Message.Text, stockPrice, authorized))
 
 		_, _ = bot.Send(msg)
 	}
 }
 
-func getCommandResponse(input string, price float32) string {
+func getCommandResponse(input string, price float32, authorized bool) string {
 	var text string
+
+	if !authorized {
+		return rejectResponse
+	}
 
 	switch input {
 	case "/start":
@@ -90,4 +96,12 @@ func getStockPrice(stock string) float32 {
 	}
 
 	return quote.Pc
+}
+
+func getAuthStatus(msg *tgbotapi.Message) bool {
+	if msg.Chat.UserName == "kiriltaran" {
+		return true
+	}
+	
+	return false
 }
